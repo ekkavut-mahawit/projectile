@@ -1,0 +1,1939 @@
+<!DOCTYPE html>
+<html lang="th" class="h-full select-none">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Projectile Physics Artillery Challenge - ภารกิจยิงปืนใหญ่โปรเจกไทล์</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Kanit & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Kanit', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Kanit', sans-serif;
+      overflow: hidden;
+      background-color: #080c14;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.8);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #0284c7;
+      border-radius: 3px;
+    }
+
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.5);
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      background: rgba(30, 41, 59, 0.9);
+      border-radius: 8px;
+      height: 8px;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 20px;
+      width: 20px;
+      border-radius: 50%;
+      background: #38bdf8;
+      cursor: pointer;
+      box-shadow: 0 0 12px #38bdf8;
+      transition: all 0.15s ease;
+    }
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+      background: #7dd3fc;
+    }
+
+    @keyframes pulse-fire {
+      0%, 100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.6), 0 0 30px rgba(245, 158, 11, 0.4); }
+      50% { box-shadow: 0 0 25px rgba(239, 68, 68, 0.9), 0 0 45px rgba(245, 158, 11, 0.7); }
+    }
+    .btn-fire-glow {
+      animation: pulse-fire 2s infinite;
+    }
+
+    .confetti {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      opacity: 0.8;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body class="h-screen w-screen flex flex-col text-slate-100 overflow-hidden select-none">
+
+  <!-- ==========================================================================
+       SCREEN 1: STUDENT REGISTRATION OVERLAY
+       ========================================================================== -->
+  <div id="screen-registration" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/95 backdrop-blur-lg">
+    <div class="glass-panel max-w-lg w-full rounded-2xl p-6 sm:p-8 border border-cyan-500/30 shadow-2xl relative">
+      
+      <!-- Top-right Teacher Settings button -->
+      <button id="btn-open-teacher-settings-reg" class="absolute top-4 right-4 text-slate-400 hover:text-cyan-400 p-2 transition text-lg" title="ตั้งค่าระบบ / ครูผู้สอน (⚙️)">
+        <i class="fa-solid fa-gear"></i>
+      </button>
+
+      <div class="text-center mb-6">
+        <!-- CUSTOM BRANDING LOGO IMAGE CONTAINER 1 (Registration Page) -->
+        <div class="w-16 h-16 mx-auto mb-3 rounded-2xl overflow-hidden shadow-lg shadow-cyan-500/30 border border-cyan-500/40 bg-slate-900 flex items-center justify-center">
+          <img src="https://ekkavut-mahawit.github.io/smic-model/logo.png" alt="Logo" class="w-full h-full object-cover" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'w-full h-full flex items-center justify-center text-3xl bg-gradient-to-tr from-cyan-600 to-blue-600 text-white rounded-2xl\'><i class=\'fa-solid fa-graduation-cap\'></i></div>';">
+        </div>
+
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-300 to-blue-400">
+          ภารกิจยิงปืนใหญ่โปรเจกไทล์
+        </h2>
+        <p class="text-xs sm:text-sm text-slate-400 mt-1">แบบทดสอบคำนวณทางฟิสิกส์ 5 ข้อ (ยิงได้ข้อละ 2 ครั้ง)</p>
+      </div>
+
+      <form id="form-registration" class="space-y-4 text-xs sm:text-sm">
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1"><i class="fa-solid fa-user mr-1 text-cyan-400"></i> ชื่อ - นามสกุล นักเรียน *</label>
+          <input type="text" id="reg-name" required placeholder="ด.ช. สมชาย สายฟิสิกส์" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-cyan-200 focus:outline-none focus:border-cyan-400">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-300 font-semibold mb-1"><i class="fa-solid fa-users-rectangle mr-1 text-sky-400"></i> ชั้น มัธยมศึกษา *</label>
+            <input type="text" id="reg-class" required placeholder="ม.4/1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sky-200 focus:outline-none focus:border-sky-400">
+          </div>
+          <div>
+            <label class="block text-slate-300 font-semibold mb-1"><i class="fa-solid fa-hashtag mr-1 text-amber-400"></i> เลขที่ *</label>
+            <input type="number" id="reg-no" required min="1" max="99" placeholder="12" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-amber-200 focus:outline-none focus:border-amber-400">
+          </div>
+        </div>
+
+        <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-[11px] text-slate-300 space-y-1">
+          <div class="font-bold text-amber-300"><i class="fa-solid fa-circle-info mr-1"></i> กติกาการสอบ (เต็ม 100 คะแนน):</div>
+          <ul class="list-disc list-inside space-y-0.5 text-slate-400">
+            <li>ระบบสุ่มโจทย์ 5 ข้อจากคลัง 20 รูปแบบ</li>
+            <li>ยิงได้ <strong class="text-white">ข้อละ 2 ครั้ง</strong> เท่านั้น</li>
+            <li>ยิงโดนใน <strong class="text-emerald-400">ครั้งที่ 1 = 20 คะแนน</strong> | <strong class="text-amber-400">ครั้งที่ 2 = 10 คะแนน</strong></li>
+            <li>สังเกต <strong class="text-amber-300">ค่าแรงโน้มถ่วง g</strong> ของแต่ละข้อให้ดี (เช่น บนดวงจันทร์ g = 1.6 m/s²)</li>
+            <li>ระบบจะ <strong class="text-emerald-300">บันทึกคะแนนเข้า Google Sheet อัตโนมัติ</strong> เมื่อเล่นจบ</li>
+          </ul>
+        </div>
+
+        <div class="pt-2">
+          <button type="submit" class="w-full py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-extrabold rounded-xl shadow-lg transition text-base">
+            <i class="fa-solid fa-play mr-2"></i> เริ่มทำแบบทดสอบ (5 ข้อ)
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       TOP NAVIGATION / HUD HEADER
+       ========================================================================== -->
+  <header class="glass-panel relative z-20 px-4 py-2.5 flex items-center justify-between border-b border-slate-800">
+    <div class="flex items-center space-x-3">
+      <!-- CUSTOM BRANDING LOGO IMAGE CONTAINER 2 (Top HUD Bar) -->
+      <div class="w-10 h-10 rounded-xl overflow-hidden shadow-md border border-cyan-500/40 bg-slate-900 flex items-center justify-center shrink-0">
+        <img src="https://ekkavut-mahawit.github.io/smic-model/logo.png" alt="Logo" class="w-full h-full object-cover" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'w-full h-full flex items-center justify-center text-lg bg-gradient-to-tr from-cyan-600 to-blue-600 text-white rounded-xl\'><i class=\'fa-solid fa-crosshair\'></i></div>';">
+      </div>
+
+      <div>
+        <h1 class="text-sm sm:text-base font-extrabold tracking-wide bg-gradient-to-r from-cyan-400 via-sky-300 to-blue-400 bg-clip-text text-transparent">
+          PROJECTILE PHYSICS QUIZ
+        </h1>
+        <p id="student-info-tag" class="text-xs text-slate-400 hidden sm:block">ลงทะเบียน: -</p>
+      </div>
+    </div>
+
+    <!-- QUIZ PROGRESS & SCORE BADGES -->
+    <div class="flex items-center gap-2 sm:gap-3">
+      <!-- Question Badge -->
+      <div class="bg-cyan-950/90 border border-cyan-500/40 px-2.5 py-1 rounded-xl text-xs font-mono flex items-center gap-1.5">
+        <i class="fa-solid fa-list-check text-cyan-400"></i>
+        <span class="text-slate-400 hidden sm:inline">ข้อที่:</span>
+        <span id="hud-quiz-qnum" class="text-cyan-300 font-bold">1 / 5</span>
+      </div>
+
+      <!-- Remaining Attempts Badge -->
+      <div class="bg-amber-950/90 border border-amber-500/40 px-2.5 py-1 rounded-xl text-xs font-mono flex items-center gap-1.5">
+        <i class="fa-solid fa-shield-halved text-amber-400"></i>
+        <span class="text-slate-400 hidden sm:inline">สิทธิ์ยิง:</span>
+        <span id="hud-quiz-attempts" class="text-amber-300 font-bold">2 / 2</span>
+      </div>
+
+      <!-- Current Score -->
+      <div class="bg-emerald-950/90 border border-emerald-500/40 px-2.5 py-1 rounded-xl text-xs font-mono flex items-center gap-1.5">
+        <i class="fa-solid fa-trophy text-emerald-400"></i>
+        <span class="text-slate-400 hidden sm:inline">คะแนน:</span>
+        <span id="hud-quiz-score" class="text-emerald-300 font-bold">0</span>
+      </div>
+    </div>
+
+    <!-- ACTION UTILITY BUTTONS -->
+    <div class="flex items-center space-x-1.5 sm:space-x-2">
+      <!-- Formulas Button -->
+      <button id="btn-open-formulas" class="px-2.5 py-1.5 rounded-lg bg-indigo-950 hover:bg-indigo-900 border border-indigo-700/60 text-xs font-medium text-indigo-300 transition flex items-center gap-1.5">
+        <i class="fa-solid fa-book-bookmark text-indigo-400"></i>
+        <span class="hidden md:inline">สูตรฟิสิกส์</span>
+      </button>
+
+      <!-- Scratchpad Notes -->
+      <button id="btn-open-scratchpad" class="px-2.5 py-1.5 rounded-lg bg-emerald-950 hover:bg-emerald-900 border border-emerald-700/60 text-xs font-medium text-emerald-300 transition flex items-center gap-1.5">
+        <i class="fa-solid fa-pen-to-square text-emerald-400"></i>
+        <span class="hidden md:inline">กระดานทดเลข</span>
+      </button>
+
+      <!-- Teacher Settings -->
+      <button id="btn-open-teacher-settings-hud" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition" title="ตั้งค่าระบบ / ครูผู้สอน">
+        <i class="fa-solid fa-gear text-cyan-400"></i>
+      </button>
+
+      <!-- Sound Toggle -->
+      <button id="btn-toggle-sound" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition" title="เปิด/ปิด เสียง">
+        <i class="fa-solid fa-volume-high text-cyan-400"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ==========================================================================
+       MAIN SIMULATION CANVAS AREA
+       ========================================================================== -->
+  <main class="relative flex-1 w-full h-full overflow-hidden bg-slate-950">
+    <!-- Canvas Element -->
+    <canvas id="physicsCanvas" class="w-full h-full block cursor-crosshair"></canvas>
+
+    <!-- QUESTION DATA OVERLAY PANEL -->
+    <div class="absolute top-3 left-3 glass-panel rounded-xl p-3 text-xs font-mono space-y-1.5 min-w-[260px] border border-cyan-500/30">
+      <div class="flex justify-between items-center pb-1 border-b border-slate-800 font-sans text-cyan-400 font-bold">
+        <span id="q-title-label"><i class="fa-solid fa-bullseye mr-1"></i> โจทย์ข้อที่ 1</span>
+        <span class="text-[10px] bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded">โหมดคำนวณ</span>
+      </div>
+
+      <!-- GLOWING ENVIRONMENT / MOON BADGE -->
+      <div id="q-env-badge" class="py-1 px-2 rounded-lg bg-indigo-950/90 border border-indigo-500/50 text-indigo-300 font-sans font-bold text-center text-[11px] shadow">
+        🌍 สภาพแวดล้อม: บนโลก
+      </div>
+
+      <div class="flex justify-between">
+        <span class="text-slate-400">ตำแหน่งเป้าหมาย X:</span>
+        <span id="q-target-x" class="text-amber-300 font-bold">40.0 m</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-slate-400">ความสูงเป้าหมาย Y:</span>
+        <span id="q-target-y" class="text-amber-300 font-bold">0.0 m</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-slate-400">ความสูงฐานยิง h₀:</span>
+        <span id="q-h0" class="text-sky-300 font-bold">0.0 m</span>
+      </div>
+      <div class="flex justify-between p-1 bg-slate-900/90 rounded border border-slate-800">
+        <span class="text-slate-300 font-bold">แรงโน้มถ่วง g:</span>
+        <span id="q-g" class="text-emerald-400 font-extrabold text-sm">10.0 m/s²</span>
+      </div>
+      <div id="q-wall-container" class="flex justify-between text-orange-400 hidden">
+        <span>สิ่งกีดขวาง:</span>
+        <span id="q-wall-info" class="font-bold">X=20m, H=10m</span>
+      </div>
+    </div>
+
+    <!-- VISUALIZERS TOGGLE (FLOATING RIGHT TOP) -->
+    <div class="absolute top-3 right-3 glass-panel rounded-xl p-2 flex flex-col gap-1.5 text-xs">
+      <label class="flex items-center gap-2 px-2 py-1 rounded hover:bg-slate-800/60 cursor-pointer">
+        <input type="checkbox" id="chk-show-vectors" checked class="rounded border-slate-700 text-cyan-500">
+        <span class="text-slate-300 font-medium">เวกเตอร์ขณะบิน ($v_x, v_y, g$)</span>
+      </label>
+      <label class="flex items-center gap-2 px-2 py-1 rounded hover:bg-slate-800/60 cursor-pointer">
+        <input type="checkbox" id="chk-show-grid" checked class="rounded border-slate-700 text-cyan-500">
+        <span class="text-slate-300 font-medium">แกนพิกัดสเกล 10 เมตร</span>
+      </label>
+      <label class="flex items-center gap-2 px-2 py-1 rounded hover:bg-slate-800/60 cursor-pointer">
+        <input type="checkbox" id="chk-show-past-trails" checked class="rounded border-slate-700 text-cyan-500">
+        <span class="text-slate-300 font-medium">แสดงรอยประวัตินัดที่ยิงไปแล้ว</span>
+      </label>
+    </div>
+
+    <!-- BANNER ANNOUNCER -->
+    <div id="banner-msg" class="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-0 scale-90 transition-all duration-300 text-center z-30">
+      <h2 id="banner-title" class="text-4xl sm:text-6xl font-black italic drop-shadow-[0_8px_20px_rgba(0,0,0,0.9)] bg-gradient-to-r from-yellow-300 via-amber-400 to-emerald-400 bg-clip-text text-transparent">
+        HIT!
+      </h2>
+      <p id="banner-subtitle" class="text-slate-100 text-sm sm:text-base font-semibold mt-1 drop-shadow-md font-mono bg-slate-900/90 px-4 py-1.5 rounded-full border border-slate-700">
+        เข้าเป้าหมายอย่างแม่นยำ!
+      </p>
+    </div>
+  </main>
+
+  <!-- ==========================================================================
+       CONTROLS & DASHBOARD PANEL
+       ========================================================================== -->
+  <footer class="glass-panel relative z-20 border-t border-slate-800 p-3">
+    <div class="max-w-7xl mx-auto space-y-3">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+        
+        <!-- Controls Sliders Block -->
+        <div class="md:col-span-8 bg-slate-900/80 p-3 rounded-xl border border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          
+          <!-- Angle Control (theta: 0 to 90 deg) -->
+          <div class="space-y-1">
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-slate-300 font-semibold flex items-center gap-1">
+                <i class="fa-solid fa-rotate-right text-cyan-400"></i> มุมยิง ($\theta$):
+              </span>
+              <div class="flex items-center gap-1">
+                <input id="input-angle-num" type="number" min="0" max="90" step="1" value="45" class="w-16 bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-right font-mono text-cyan-400 font-bold text-xs focus:outline-none focus:border-cyan-400">
+                <span class="text-slate-400 text-xs">°</span>
+              </div>
+            </div>
+            <input id="slider-angle" type="range" min="0" max="90" step="1" value="45" class="w-full">
+          </div>
+
+          <!-- Initial Velocity Control (v0: 0 to 30 m/s) -->
+          <div class="space-y-1">
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-slate-300 font-semibold flex items-center gap-1">
+                <i class="fa-solid fa-gauge-high text-amber-400"></i> ความเร็วต้น ($v_0$):
+              </span>
+              <div class="flex items-center gap-1">
+                <input id="input-power-num" type="number" min="0" max="30" step="0.5" value="0" class="w-16 bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-right font-mono text-amber-400 font-bold text-xs focus:outline-none focus:border-amber-400">
+                <span class="text-slate-400 text-xs">m/s</span>
+              </div>
+            </div>
+            <input id="slider-power" type="range" min="0" max="30" step="0.5" value="0" class="w-full">
+          </div>
+
+        </div>
+
+        <!-- Action Buttons Block -->
+        <div class="md:col-span-4 flex items-center gap-2">
+          <button id="btn-fire-cannon" class="flex-1 py-3 px-4 bg-gradient-to-r from-red-600 via-amber-600 to-yellow-500 hover:from-red-500 hover:to-yellow-400 text-white font-black rounded-xl text-base tracking-wider uppercase btn-fire-glow transition duration-150 flex items-center justify-center gap-2 active:scale-95 shadow-lg">
+            <i class="fa-solid fa-fire text-yellow-200 text-lg"></i>
+            <span>ยิงกระสุน!</span>
+            <span class="text-[10px] bg-red-950/70 px-1.5 py-0.5 rounded text-amber-200 border border-red-500/40 font-mono hidden xl:inline">SPACE</span>
+          </button>
+
+          <button id="btn-toggle-log-drawer" class="p-3 bg-slate-800 hover:bg-slate-700 text-cyan-400 rounded-xl border border-slate-700 transition active:scale-95 flex items-center gap-1.5" title="ประวัติการยิง">
+            <i class="fa-solid fa-table-list"></i>
+            <span class="text-xs font-medium hidden sm:inline">ประวัติยิง</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==========================================================================
+       FLIGHT DATA LOG DRAWER
+       ========================================================================== -->
+  <div id="drawer-flight-log" class="glass-panel border-t border-cyan-500/30 p-4 transition-all duration-300 max-h-56 overflow-y-auto hidden">
+    <div class="flex items-center justify-between mb-2">
+      <h3 class="text-xs font-bold text-cyan-300 flex items-center gap-2">
+        <i class="fa-solid fa-table"></i> ตารางบันทึกผลการยิง (Flight Data Log)
+      </h3>
+      <button id="btn-close-log-drawer" class="text-slate-400 hover:text-white px-2 py-1 text-xs">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs font-mono border-collapse">
+        <thead>
+          <tr class="bg-slate-900/90 text-slate-400 border-b border-slate-800">
+            <th class="p-1.5">ข้อที่</th>
+            <th class="p-1.5">ครั้งที่</th>
+            <th class="p-1.5">มุมยิง $\theta$</th>
+            <th class="p-1.5">ความเร็ว $v_0$</th>
+            <th class="p-1.5">เวลาลอย $t$ (s)</th>
+            <th class="p-1.5">ระยะตก $X_{impact}$ (m)</th>
+            <th class="p-1.5">คลาดเคลื่อน $\Delta X, \Delta Y$</th>
+            <th class="p-1.5">ผลลัพธ์</th>
+          </tr>
+        </thead>
+        <tbody id="log-table-body" class="divide-y divide-slate-800/60 text-slate-300">
+          <tr>
+            <td colspan="8" class="p-3 text-center text-slate-500 italic">ยังไม่มีข้อมูลการยิง</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       SCREEN 3: QUIZ RESULT & AUTOMATIC GOOGLE SHEET SAVE MODAL
+       ========================================================================== -->
+  <div id="modal-quiz-finish" class="fixed inset-0 bg-slate-950/90 backdrop-blur-xl z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass-panel max-w-2xl w-full rounded-2xl p-6 sm:p-8 border border-emerald-500/40 text-slate-200 relative max-h-[90vh] overflow-y-auto shadow-2xl">
+      
+      <div class="text-center mb-6">
+        <div class="inline-flex p-3 bg-gradient-to-tr from-emerald-600 to-teal-600 rounded-2xl text-white shadow-lg shadow-emerald-500/30 mb-2">
+          <i class="fa-solid fa-award text-4xl"></i>
+        </div>
+        <h2 class="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400">
+          สรุปผลการทำแบบทดสอบ
+        </h2>
+        <p id="finish-student-info" class="text-xs sm:text-sm text-slate-300 mt-1 font-mono">นักเรียน: - | ม.-/- | เลขที่ -</p>
+      </div>
+
+      <!-- Total Score Display -->
+      <div class="bg-slate-900/90 rounded-2xl p-4 border border-emerald-500/30 text-center mb-6 shadow-inner">
+        <span class="text-xs text-slate-400 uppercase tracking-widest block mb-1">คะแนนรวมที่ได้</span>
+        <div class="text-5xl font-black font-mono text-emerald-400 flex items-center justify-center gap-1">
+          <span id="finish-total-score">0</span>
+          <span class="text-xl text-slate-500 font-normal">/ 100</span>
+        </div>
+        <div id="finish-badge-container" class="mt-2 text-xs font-semibold text-amber-300"></div>
+      </div>
+
+      <!-- Breakdown Table -->
+      <div class="space-y-2 mb-6 text-xs font-mono">
+        <div class="font-bold text-slate-300 font-sans mb-1"><i class="fa-solid fa-list-ol text-cyan-400 mr-1"></i> รายละเอียดคะแนนแต่ละข้อ:</div>
+        <div class="grid grid-cols-5 gap-2 text-center" id="finish-breakdown-grid"></div>
+      </div>
+
+      <!-- AUTOMATIC SAVE STATUS BANNER -->
+      <div id="sheet-submit-status" class="mb-5 p-3 rounded-xl text-xs font-mono text-center border transition-all duration-300"></div>
+
+      <!-- Submit Backup Buttons -->
+      <div class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <button id="btn-download-csv" class="py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl text-xs border border-slate-700 transition flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-file-csv text-amber-400"></i>
+            <span>ดาวน์โหลด CSV</span>
+          </button>
+          <button id="btn-copy-json" class="py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl text-xs border border-slate-700 transition flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-copy text-cyan-400"></i>
+            <span>คัดลอก JSON</span>
+          </button>
+        </div>
+
+        <button id="btn-restart-quiz" class="w-full py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-extrabold rounded-xl text-sm transition">
+          <i class="fa-solid fa-rotate-right mr-1"></i> ทำแบบทดสอบใหม่อีกครั้ง
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL: TEACHER SYSTEM SETTINGS (⚙️)
+       ========================================================================== -->
+  <div id="modal-teacher-settings" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass-panel max-w-2xl w-full rounded-2xl p-6 border border-cyan-500/40 text-slate-200 max-h-[90vh] overflow-y-auto relative shadow-2xl">
+      <button id="btn-close-teacher-settings" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2">
+        <i class="fa-solid fa-xmark text-xl"></i>
+      </button>
+
+      <div class="flex items-center gap-3 mb-4 border-b border-slate-800 pb-3">
+        <div class="p-3 bg-cyan-950 text-cyan-400 rounded-xl border border-cyan-800">
+          <i class="fa-solid fa-gear text-2xl"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-cyan-300">ตั้งค่าระบบและระบบบันทึกชีต (สำหรับครูผู้สอน)</h3>
+          <p class="text-xs text-slate-400">กำหนด URL สำหรับเชื่อมต่อ Google Apps Script เพื่อส่งคะแนนเข้า Google Sheet อัตโนมัติ</p>
+        </div>
+      </div>
+
+      <div class="space-y-4 text-xs">
+        <div>
+          <label class="block text-slate-200 font-semibold mb-1"><i class="fa-solid fa-link text-emerald-400 mr-1"></i> Google Apps Script Web App URL</label>
+          <input type="url" id="setting-script-url" placeholder="https://script.google.com/macros/s/.../exec" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-emerald-300 font-mono text-xs focus:outline-none focus:border-emerald-400">
+          <p class="text-[11px] text-slate-400 mt-1">* URL จะถูกบันทึกไว้ในเครื่องโดยอัตโนมัติ หรือใส่ในตัวแปร `let DEFAULT_SCRIPT_URL = "";` ในไฟล์ JS ได้</p>
+        </div>
+
+        <div class="flex justify-end gap-2">
+          <button id="btn-save-teacher-settings" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-extrabold rounded-xl text-xs shadow transition">
+            <i class="fa-solid fa-floppy-disk mr-1"></i> บันทึก URL
+          </button>
+        </div>
+
+        <div class="border-t border-slate-800 pt-3">
+          <div class="flex justify-between items-center mb-2">
+            <span class="font-bold text-amber-300"><i class="fa-solid fa-code mr-1"></i> โค้ด Google Apps Script (คัดลอกนำไปวางใน Apps Script):</span>
+            <button id="btn-copy-gas-code" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded border border-slate-700 text-[11px]">
+              <i class="fa-solid fa-copy mr-1"></i> คัดลอกโค้ด
+            </button>
+          </div>
+          <pre id="gas-code-block" class="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-[11px] text-emerald-400 overflow-x-auto leading-relaxed">
+function doGet(e) {
+  return ContentService.createTextOutput("ระบบบันทึกคะแนนโปรเจกไทล์พร้อมใช้งาน (Active)")
+    .setMimeType(ContentService.MimeType.TEXT);
+}
+
+function doPost(e) {
+  var lock = LockService.getScriptLock();
+  lock.tryLock(10000);
+  
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow([
+        "เวลาบันทึก", 
+        "ชื่อ-นามสกุล", 
+        "ชั้น", 
+        "เลขที่", 
+        "ข้อ 1", 
+        "ข้อ 2", 
+        "ข้อ 3", 
+        "ข้อ 4", 
+        "ข้อ 5", 
+        "คะแนนรวม (100)"
+      ]);
+    }
+    
+    var data;
+    if (e && e.postData && e.postData.contents) {
+      data = JSON.parse(e.postData.contents);
+    } else if (e && e.parameter) {
+      data = e.parameter;
+    } else {
+      throw new Error("No data received");
+    }
+    
+    sheet.appendRow([
+      data.timestamp || new Date().toLocaleString("th-TH"),
+      data.studentName || "-",
+      data.studentClass || "-",
+      data.studentNo || "-",
+      data.q1 !== undefined ? data.q1 : 0,
+      data.q2 !== undefined ? data.q2 : 0,
+      data.q3 !== undefined ? data.q3 : 0,
+      data.q4 !== undefined ? data.q4 : 0,
+      data.q5 !== undefined ? data.q5 : 0,
+      data.totalScore !== undefined ? data.totalScore : 0
+    ]);
+    
+    return ContentService.createTextOutput(JSON.stringify({ "status": "success" }))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({ "status": "error", "message": error.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } finally {
+    lock.releaseLock();
+  }
+}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL: PHYSICS FORMULAS REFERENCE
+       ========================================================================== -->
+  <div id="modal-formulas" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass-panel max-w-2xl w-full rounded-2xl p-6 border border-indigo-500/40 text-slate-200 max-h-[90vh] overflow-y-auto relative">
+      <button id="btn-close-formulas" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2">
+        <i class="fa-solid fa-xmark text-xl"></i>
+      </button>
+
+      <div class="flex items-center gap-3 mb-4 border-b border-slate-800 pb-3">
+        <div class="p-3 bg-indigo-950 text-indigo-400 rounded-xl border border-indigo-800">
+          <i class="fa-solid fa-book-bookmark text-2xl"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-indigo-300">สรุปสูตรฟิสิกส์: การเคลื่อนที่แบบโปรเจกไทล์</h3>
+          <p class="text-xs text-slate-400">ใช้เป็นคู่มือคำนวณหามุมยิง ($\theta$) และความเร็วต้น ($v_0$)</p>
+        </div>
+      </div>
+
+      <div class="space-y-3 text-xs font-mono">
+        <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800 space-y-1">
+          <div class="font-bold text-emerald-400 font-sans">1. การแยกองค์ประกอบความเร็วต้น ($v_0$)</div>
+          <div>$v_x = v_0 \cdot \cos\theta$ (ความเร็วแนวราบ คงที่)</div>
+          <div>$v_y = v_0 \cdot \sin\theta$ (ความเร็วแนวดิ่ง เปลี่ยนตาม $g$)</div>
+        </div>
+
+        <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800 space-y-1">
+          <div class="font-bold text-sky-400 font-sans">2. สมการตำแหน่งตามเวลา ($t$)</div>
+          <div>แนวราบ: $X = (v_0 \cos\theta) \cdot t$ &nbsp;$\rightarrow$&nbsp; $t = \frac{X}{v_0 \cos\theta}$</div>
+          <div>แนวดิ่ง: $Y = h_0 + (v_0 \sin\theta) \cdot t - \frac{1}{2}g t^2$</div>
+        </div>
+
+        <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800 space-y-1">
+          <div class="font-bold text-amber-300 font-sans">3. ระยะตกแนวราบ ($R$) กรณีพื้นราบ ($h_0 = 0, Y = 0$)</div>
+          <div>เวลาลอยทั้งหมด: $T = \frac{2 v_0 \sin\theta}{g}$</div>
+          <div>ระยะตกแนวราบ: $R = \frac{v_0^2 \sin(2\theta)}{g}$</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL: STUDENT SCRATCHPAD NOTE
+       ========================================================================== -->
+  <div id="modal-scratchpad" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass-panel max-w-2xl w-full rounded-2xl p-6 border border-emerald-500/40 text-slate-200 relative">
+      <button id="btn-close-scratchpad" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2">
+        <i class="fa-solid fa-xmark text-xl"></i>
+      </button>
+
+      <div class="flex items-center gap-3 mb-4 border-b border-slate-800 pb-3">
+        <div class="p-3 bg-emerald-950 text-emerald-400 rounded-xl border border-emerald-800">
+          <i class="fa-solid fa-pen-to-square text-2xl"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-emerald-300">กระดานทดเลข (Scratchpad)</h3>
+          <p class="text-xs text-slate-400">สำหรับทดตัวเลข แทนค่าสมการ และคำนวณในระหว่างทำข้อสอบ</p>
+        </div>
+      </div>
+
+      <div class="space-y-3">
+        <textarea id="scratchpad-text" rows="10" placeholder="พิมพ์ทดเลขที่นี่... 
+เช่น: 
+ข้อ 1: X = 40m, g = 10 m/s^2
+ตั้ง θ = 45° (sin(90°) = 1)
+R = (v0^2 * sin(2θ)) / g
+40 = (v0^2 * 1) / 10
+v0^2 = 400 => v0 = 20 m/s!" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 font-mono text-xs text-emerald-300 focus:outline-none focus:border-emerald-500 leading-relaxed resize-none"></textarea>
+        
+        <div class="flex justify-between items-center text-xs">
+          <span class="text-slate-500">โน้ตจะถูกบันทึกไว้อัตโนมัติบนเบราว์เซอร์</span>
+          <button id="btn-clear-scratchpad" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg">
+            <i class="fa-solid fa-eraser mr-1"></i> ล้างโน้ต
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       JAVASCRIPT SOUND SYNTHESIZER & GAME ENGINE
+       ========================================================================== -->
+  <script>
+    /* ==========================================================================
+       DEFAULT SCRIPT URL CONFIG (คุณครูวางลิงก์ Google Apps Script ตรงนี้)
+       ========================================================================== */
+    let DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzkZmHs_Zkhv59EdXJs1CbYx7mVkXTMvzcePQKnZmf5VfP7Q48dH9hSpWLkJv43ZhFZvg/exec"; 
+
+    /* ==========================================================================
+       WEB AUDIO SYNTHESIZER
+       ========================================================================== */
+    class SoundSynthesizer {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playCannonFire() {
+        if (!this.enabled) return;
+        this.init();
+        const now = this.ctx.currentTime;
+
+        const bufferSize = this.ctx.sampleRate * 0.35;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(700, now);
+        filter.frequency.exponentialRampToValueAtTime(70, now + 0.3);
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(1.0, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        const osc = this.ctx.createOscillator();
+        const oscGain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.exponentialRampToValueAtTime(30, now + 0.25);
+
+        oscGain.gain.setValueAtTime(0.8, now);
+        oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+
+        osc.connect(oscGain);
+        oscGain.connect(this.ctx.destination);
+
+        noise.start(now);
+        osc.start(now);
+        noise.stop(now + 0.35);
+        osc.stop(now + 0.3);
+      }
+
+      playHitExplosion() {
+        if (!this.enabled) return;
+        this.init();
+        const now = this.ctx.currentTime;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.exponentialRampToValueAtTime(40, now + 0.45);
+
+        gain.gain.setValueAtTime(0.9, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.45);
+      }
+
+      playMissSound() {
+        if (!this.enabled) return;
+        this.init();
+        const now = this.ctx.currentTime;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(110, now);
+        osc.frequency.exponentialRampToValueAtTime(35, now + 0.25);
+
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      }
+
+      playSuccessChime() {
+        if (!this.enabled) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+
+        notes.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const noteTime = now + idx * 0.09;
+
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+
+          gain.gain.setValueAtTime(0, noteTime);
+          gain.gain.linearRampToValueAtTime(0.25, noteTime + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.35);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start(noteTime);
+          osc.stop(noteTime + 0.4);
+        });
+      }
+
+      playClick() {
+        if (!this.enabled) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, now);
+        osc.frequency.exponentialRampToValueAtTime(200, now + 0.04);
+
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.04);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.05);
+      }
+    }
+
+    const sound = new SoundSynthesizer();
+
+    /* ==========================================================================
+       20 SIMPLIFIED PHYSICS SCENARIOS BANK
+       ========================================================================== */
+    const QUIZ_BANK = [
+      {
+        id: 1,
+        title: "โจทย์ที่ 1: ยิงย้อยบนพื้นราบ (g = 10)",
+        desc: "เป้าหมายระยะ X = 40.0m บนพื้นราบ (h₀ = 0m, Y = 0m, g = 10 m/s²)",
+        targetX: 40.0, targetY: 0.0, targetRadius: 2.5,
+        h0: 0.0, gravity: 10.0, wall: null, env: "earth"
+      },
+      {
+        id: 2,
+        title: "โจทย์ที่ 2: เป้าหมายระยะ 30m บนพื้นราบ",
+        desc: "เป้าหมายระยะ X = 30.0m บนพื้นราบ (h₀ = 0m, Y = 0m, g = 10 m/s²)",
+        targetX: 30.0, targetY: 0.0, targetRadius: 2.5,
+        h0: 0.0, gravity: 10.0, wall: null, env: "earth"
+      },
+      {
+        id: 3,
+        title: "โจทย์ที่ 3: ยิงขึ้นที่สูง Y = 10m",
+        desc: "เป้าหมายอยู่ที่ X = 40.0m ความสูง Y = 10.0m (g = 10 m/s²)",
+        targetX: 40.0, targetY: 10.0, targetRadius: 2.5,
+        h0: 0.0, gravity: 10.0, wall: null, env: "earth"
+      },
+      {
+        id: 4,
+        title: "โจทย์ที่ 4: ยิงจากหน้าผาสูง h₀ = 15m",
+        desc: "ฐานยิงสูง h₀ = 15.0m ยิงเป้าหมายบนพื้น X = 40.0m (g = 10 m/s²)",
+        targetX: 40.0, targetY: 0.0, targetRadius: 2.5,
+        h0: 15.0, gravity: 10.0, wall: null, env: "earth"
+      },
+      {
+        id: 5,
+        title: "โจทย์ที่ 5: ยิงข้ามกำแพงสิ่งกีดขวาง",
+        desc: "กำแพงที่ X = 20m สูง H = 10m ยิงเป้าหมาย X = 40.0m, Y = 0.0m (g = 10 m/s²)",
+        targetX: 40.0, targetY: 0.0, targetRadius: 2.5,
+        h0: 0.0, gravity: 10.0, wall: { x: 20.0, height: 10.0, width: 2.0 }, env: "earth"
+      },
+      {
+        id: 6,
+        title: "โจทย์ที่ 6: 🌕 ภารกิจยิงปืนใหญ่บนดวงจันทร์",
+        desc: "แรงโน้มถ่วงต่ำมากบนดวงจันทร์ g = 1.6 m/s² ยิงเป้า X = 50.0m บนพื้นผิวสีเทา",
+        targetX: 50.0, targetY: 0.0, targetRadius: 3.0,
+        h0: 0.0, gravity: 1.6, wall: null, env: "moon"
+      },
+      {
+        id: 7,
+        title: "โจทย์ที่ 7: 🔴 ภารกิจบนดาวอังคาร (g = 3.7 m/s²)",
+        desc: "แรงโน้มถ่วงดาวอังคาร g = 3.7 m/s² ยิงเป้าหมาย X = 60.0m, Y = 5.0m",
+        targetX: 60.0, targetY: 5.0, targetRadius: 2.8,
+        h0: 0.0, gravity: 3.7, wall: null, env: "mars"
+      },
+      {
+        id: 8,
+        title: "โจทย์ที่ 8: ยิงจากหน้าผาสูง h₀ = 10m",
+        desc: "ฐานยิง h₀ = 10.0m ยิงเป้าหมาย X = 30.0m บนพื้น (g = 10 m/s²)",
+        targetX: 30.0, targetY: 0.0, targetRadius: 2.5,
+        h0: 10.0, gravity: 10.0, wall: null, env: "earth"
+      },
+      {
+        id: 9,
+        title: "โจทย์ที่ 9: ยิงขึ้นยอดป้อมปราการ Y = 15m",
+        desc: "เป้าหมายอยู่ที่ X = 50.0m ความสูง Y = 15.0m (g = 10 m/s²)",
+        targetX: 50.0, targetY: 15.0, targetRadius: 2.5,
+        h0: 0.0, gravity: 10.0, wall: null, env: "earth"
+      },
+      {
+        id: 10,
+        title: "โจทย์ที่ 10: เป้าหมายระยะ 45m บนพื้นมาตรฐาน (g = 9.81)",
+        desc: "ยิงเป้าหมายระยะ X = 45.0m บนพื้นราบ (g = 9.81 m/s²)",
+        targetX: 45.0, targetY: 0.0, targetRadius: 2.5,
+        h0: 0.0, gravity: 9.81, wall: null, env: "earth"
+      },
+      {
+        id: 11,
+        title: "โจทย์ที่ 11: ยิงลงจากหน้าผาสูง h₀ = 20m",
+        desc: "ฐานยิงสูง h₀ = 20.0m ยิงเป้าหมายระยะ X = 50.0m (g = 10 m/s²)",
+        targetX: 50.0, targetY: 0.0, targetRadius: 2.5,
+        h0: 20.0, gravity: 10.0, wall: null, env: "earth"
+      },
+      {
+        id: 12,
+        title: "โจทย์ที่ 12: ยิงข้ามคันดินสิ่งกีดขวาง",
+        desc: "กำแพงที่ X = 15m สูง H = 8m ยิงเป้า X = 35.0m, Y = 5.0m (g = 10 m/s²)",
+        targetX: 35.0, targetY: 5.0, targetRadius: 2.5,
+        h0: 0.0, gravity: 10.0, wall: { x: 15.0, height: 8.0, width: 2.0 }, env: "earth"
+      },
+      {
+        id: 13,
+        title: "โจทย์ที่ 13: เป้าหมายมุมสูงระยะสั้น X=20m, Y=15m",
+        desc: "เป้าหมายระยะสั้น X = 20.0m แต่สูง Y = 15.0m (g = 10 m/s²)",
+        targetX: 20.0, targetY: 15.0, targetRadius: 2.2,
+        h0: 0.0, gravity: 10.0, wall: null, env: "earth"
+      },
+      {
+        id: 14,
+        title: "โจทย์ที่ 14: ยิงพิสัยไกล X = 60m บนพื้นราบ",
+        desc: "ยิงเป้าหมายระยะ X = 60.0m บนพื้นราบ (g = 10 m/s²)",
+        targetX: 60.0, targetY: 0.0, targetRadius: 2.5,
+        h0: 0.0, gravity: 10.0, wall: null, env: "earth"
+      },
+      {
+        id: 15,
+        title: "โจทย์ที่ 15: ยิงจากฐานสูง h₀ = 5m ไปเป้า Y = 10m",
+        desc: "ฐานยิงสูง h₀ = 5.0m ยิงเป้าหมาย X = 40.0m, Y = 10.0m (g = 10 m/s²)",
+        targetX: 40.0, targetY: 10.0, targetRadius: 2.5,
+        h0: 5.0, gravity: 10.0, wall: null, env: "earth"
+      },
+      {
+        id: 16,
+        title: "โจทย์ที่ 16: 🟡 การทดลองบนดาวศุกร์ (g = 8.9 m/s²)",
+        desc: "แรงโน้มถ่วงดาวศุกร์ g = 8.9 m/s² ยิงเป้า X = 40.0m บนพื้นราบ",
+        targetX: 40.0, targetY: 0.0, targetRadius: 2.5,
+        h0: 0.0, gravity: 8.9, wall: null, env: "venus"
+      },
+      {
+        id: 17,
+        title: "โจทย์ที่ 17: ยิงข้ามกำแพงสูงป้อมปราการ",
+        desc: "กำแพงที่ X = 25m สูง H = 12m ยิงเป้า X = 50.0m, Y = 0.0m (g = 10 m/s²)",
+        targetX: 50.0, targetY: 0.0, targetRadius: 2.5,
+        h0: 0.0, gravity: 10.0, wall: { x: 25.0, height: 12.0, width: 2.0 }, env: "earth"
+      },
+      {
+        id: 18,
+        title: "โจทย์ที่ 18: ยิงจากผาสูง h₀ = 12m",
+        desc: "ฐานยิงสูง h₀ = 12.0m ยิงเป้าหมาย X = 36.0m บนพื้น (g = 10 m/s²)",
+        targetX: 36.0, targetY: 0.0, targetRadius: 2.5,
+        h0: 12.0, gravity: 10.0, wall: null, env: "earth"
+      },
+      {
+        id: 19,
+        title: "โจทย์ที่ 19: ยิงเป้าหมายเพดานสูง Y = 20m",
+        desc: "เป้าหมายอยู่ที่ X = 30.0m ความสูง Y = 20.0m (g = 10 m/s²)",
+        targetX: 30.0, targetY: 20.0, targetRadius: 2.5,
+        h0: 0.0, gravity: 10.0, wall: null, env: "earth"
+      },
+      {
+        id: 20,
+        title: "โจทย์ที่ 20: 🟠 ภารกิจดาวพฤหัสบดี (g = 24.8 m/s²)",
+        desc: "แรงโน้มถ่วงสูงมาก g = 24.8 m/s² ยิงเป้า X = 20.0m บนพื้นราบ",
+        targetX: 20.0, targetY: 0.0, targetRadius: 2.2,
+        h0: 0.0, gravity: 24.8, wall: null, env: "jupiter"
+      }
+    ];
+
+    /* ==========================================================================
+       MAIN APP & SIMULATION CONTROLLER
+       ========================================================================== */
+    class ProjectileQuizApp {
+      constructor() {
+        this.canvas = document.getElementById('physicsCanvas');
+        this.ctx = this.canvas.getContext('2d');
+
+        // Student Data & Script URL (Checks localStorage first, then DEFAULT_SCRIPT_URL)
+        this.student = {
+          name: '',
+          class: '',
+          no: '',
+          scriptUrl: localStorage.getItem('projectile_gas_url') || DEFAULT_SCRIPT_URL || ''
+        };
+
+        // Quiz State
+        this.activeQuestions = [];
+        this.currentQIdx = 0;
+        this.attemptsLeft = 2;
+        this.questionScores = [0, 0, 0, 0, 0];
+        this.totalScore = 0;
+
+        // Current Question Parameters
+        this.question = QUIZ_BANK[0];
+        this.angle = 45.0;
+        this.v0 = 0.0;
+        this.h0 = 0.0;
+        this.gravity = 10.0;
+
+        // Canvas Scale & Coordinate Mapping
+        this.scale = 10.0;
+        this.originX = 80;
+        this.originY = 0;
+
+        // Cannonball Physics State
+        this.ball = {
+          active: false,
+          x: 0, y: 0, vx: 0, vy: 0,
+          time: 0,
+          path: []
+        };
+
+        // Toggles & Lists
+        this.showVectors = true;
+        this.showGrid = true;
+        this.showPastTrails = true;
+
+        this.particles = [];
+        this.previousShots = [];
+        this.shotLog = [];
+        this.recoil = 0;
+
+        // Starfield background cache for Space/Moon environment
+        this.stars = [];
+        this.generateStars();
+
+        // Init Engine
+        this.initResize();
+        this.bindEvents();
+        this.loadScratchpad();
+
+        this.lastTime = performance.now();
+        requestAnimationFrame((t) => this.loop(t));
+      }
+
+      generateStars() {
+        this.stars = [];
+        for (let i = 0; i < 90; i++) {
+          this.stars.push({
+            x: Math.random(),
+            y: Math.random(),
+            radius: Math.random() * 1.5 + 0.5,
+            alpha: Math.random() * 0.8 + 0.2
+          });
+        }
+      }
+
+      initResize() {
+        const handleResize = () => {
+          const dpr = window.devicePixelRatio || 1;
+          this.canvas.width = this.canvas.parentElement.clientWidth * dpr;
+          this.canvas.height = this.canvas.parentElement.clientHeight * dpr;
+          this.ctx.scale(dpr, dpr);
+          
+          const availableW = (this.canvas.width / dpr) - 120;
+          this.scale = Math.max(8.0, Math.min(16.0, availableW / 80.0));
+          this.originY = (this.canvas.height / dpr) - 70;
+        };
+        window.addEventListener('resize', handleResize);
+        handleResize();
+      }
+
+      bindEvents() {
+        // Registration Form Submit
+        document.getElementById('form-registration').onsubmit = (e) => {
+          e.preventDefault();
+          this.student.name = document.getElementById('reg-name').value.trim();
+          this.student.class = document.getElementById('reg-class').value.trim();
+          this.student.no = document.getElementById('reg-no').value.trim();
+
+          document.getElementById('student-info-tag').textContent = `นักเรียน: ${this.student.name} (${this.student.class} เลขที่ ${this.student.no})`;
+          document.getElementById('screen-registration').classList.add('hidden');
+          
+          sound.playSuccessChime();
+          this.startQuiz();
+        };
+
+        // Teacher Settings Modal
+        const modalTeacher = document.getElementById('modal-teacher-settings');
+        const scriptInput = document.getElementById('setting-script-url');
+
+        const openTeacherSettings = () => {
+          scriptInput.value = this.student.scriptUrl;
+          modalTeacher.classList.remove('hidden');
+          sound.playClick();
+        };
+
+        document.getElementById('btn-open-teacher-settings-reg').onclick = openTeacherSettings;
+        document.getElementById('btn-open-teacher-settings-hud').onclick = openTeacherSettings;
+        document.getElementById('btn-close-teacher-settings').onclick = () => modalTeacher.classList.add('hidden');
+
+        document.getElementById('btn-save-teacher-settings').onclick = () => {
+          this.student.scriptUrl = scriptInput.value.trim();
+          localStorage.setItem('projectile_gas_url', this.student.scriptUrl);
+          alert("บันทึก URL Web App เรียบร้อยแล้ว!");
+          modalTeacher.classList.add('hidden');
+        };
+
+        document.getElementById('btn-copy-gas-code').onclick = () => {
+          const code = document.getElementById('gas-code-block').textContent;
+          navigator.clipboard.writeText(code).then(() => {
+            alert("คัดลอกโค้ด Apps Script เรียบร้อยแล้ว!");
+          }).catch(() => {
+            const ta = document.createElement('textarea');
+            ta.value = code;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            alert("คัดลอกโค้ด Apps Script เรียบร้อยแล้ว!");
+          });
+        };
+
+        // Sliders & Number Inputs Sync
+        const sliderAngle = document.getElementById('slider-angle');
+        const inputAngleNum = document.getElementById('input-angle-num');
+        const sliderPower = document.getElementById('slider-power');
+        const inputPowerNum = document.getElementById('input-power-num');
+
+        const updateAngle = (val) => {
+          this.angle = Math.max(0, Math.min(90, parseFloat(val) || 0));
+          sliderAngle.value = this.angle;
+          inputAngleNum.value = this.angle.toFixed(1);
+        };
+        sliderAngle.addEventListener('input', (e) => updateAngle(e.target.value));
+        inputAngleNum.addEventListener('change', (e) => updateAngle(e.target.value));
+
+        const updatePower = (val) => {
+          this.v0 = Math.max(0, Math.min(30, parseFloat(val) || 0));
+          sliderPower.value = this.v0;
+          inputPowerNum.value = this.v0.toFixed(1);
+        };
+        sliderPower.addEventListener('input', (e) => updatePower(e.target.value));
+        inputPowerNum.addEventListener('change', (e) => updatePower(e.target.value));
+
+        // Fire Button
+        document.getElementById('btn-fire-cannon').onclick = () => this.fireCannon();
+
+        // Visualizer Toggles
+        document.getElementById('chk-show-vectors').onchange = (e) => this.showVectors = e.target.checked;
+        document.getElementById('chk-show-grid').onchange = (e) => this.showGrid = e.target.checked;
+        document.getElementById('chk-show-past-trails').onchange = (e) => this.showPastTrails = e.target.checked;
+
+        // Sound Toggle
+        const btnSound = document.getElementById('btn-toggle-sound');
+        btnSound.onclick = () => {
+          sound.enabled = !sound.enabled;
+          btnSound.innerHTML = sound.enabled
+            ? '<i class="fa-solid fa-volume-high text-cyan-400"></i>'
+            : '<i class="fa-solid fa-volume-xmark text-slate-500"></i>';
+        };
+
+        // Modals
+        document.getElementById('btn-open-formulas').onclick = () => {
+          document.getElementById('modal-formulas').classList.remove('hidden');
+          sound.playClick();
+        };
+        document.getElementById('btn-close-formulas').onclick = () => document.getElementById('modal-formulas').classList.add('hidden');
+
+        const modalScratchpad = document.getElementById('modal-scratchpad');
+        const scratchpadText = document.getElementById('scratchpad-text');
+        document.getElementById('btn-open-scratchpad').onclick = () => {
+          modalScratchpad.classList.remove('hidden');
+          sound.playClick();
+        };
+        document.getElementById('btn-close-scratchpad').onclick = () => modalScratchpad.classList.add('hidden');
+        scratchpadText.oninput = () => localStorage.setItem('projectile_scratchpad_notes', scratchpadText.value);
+        document.getElementById('btn-clear-scratchpad').onclick = () => {
+          scratchpadText.value = '';
+          localStorage.removeItem('projectile_scratchpad_notes');
+        };
+
+        // Flight Log Drawer
+        const drawerLog = document.getElementById('drawer-flight-log');
+        document.getElementById('btn-toggle-log-drawer').onclick = () => {
+          drawerLog.classList.toggle('hidden');
+          sound.playClick();
+        };
+        document.getElementById('btn-close-log-drawer').onclick = () => drawerLog.classList.add('hidden');
+
+        // Quiz Submit Actions
+        document.getElementById('btn-download-csv').onclick = () => this.downloadCSV();
+        document.getElementById('btn-copy-json').onclick = () => this.copyJSON();
+        document.getElementById('btn-restart-quiz').onclick = () => location.reload();
+
+        // Keyboard Shortcut (Space to Fire)
+        window.addEventListener('keydown', (e) => {
+          if (e.code === 'Space' && !document.querySelector('input:focus, textarea:focus')) {
+            e.preventDefault();
+            this.fireCannon();
+          }
+        });
+      }
+
+      loadScratchpad() {
+        const saved = localStorage.getItem('projectile_scratchpad_notes');
+        if (saved) document.getElementById('scratchpad-text').value = saved;
+      }
+
+      startQuiz() {
+        // Shuffle and pick 5 unique questions out of 20
+        const shuffled = [...QUIZ_BANK].sort(() => Math.random() - 0.5);
+        this.activeQuestions = shuffled.slice(0, 5);
+
+        this.currentQIdx = 0;
+        this.questionScores = [0, 0, 0, 0, 0];
+        this.totalScore = 0;
+        this.loadQuestion(0);
+      }
+
+      loadQuestion(qIdx) {
+        this.currentQIdx = qIdx;
+        this.attemptsLeft = 2;
+        this.question = this.activeQuestions[qIdx];
+        this.h0 = this.question.h0;
+        this.gravity = this.question.gravity;
+        this.previousShots = [];
+        this.ball.active = false;
+
+        // Update HUD Displays
+        document.getElementById('hud-quiz-qnum').textContent = `${qIdx + 1} / 5`;
+        document.getElementById('hud-quiz-attempts').textContent = `${this.attemptsLeft} / 2`;
+        document.getElementById('hud-quiz-score').textContent = this.totalScore;
+
+        document.getElementById('q-title-label').innerHTML = `<i class="fa-solid fa-bullseye mr-1"></i> ${this.question.title}`;
+        document.getElementById('q-target-x').textContent = `${this.question.targetX.toFixed(1)} m`;
+        document.getElementById('q-target-y').textContent = `${this.question.targetY.toFixed(1)} m`;
+        document.getElementById('q-h0').textContent = `${this.question.h0.toFixed(1)} m`;
+        document.getElementById('q-g').textContent = `${this.question.gravity.toFixed(2)} m/s²`;
+
+        // ENVIRONMENT ALERT BADGE UPDATE (MOON PREVENT CONFUSION)
+        const envBadge = document.getElementById('q-env-badge');
+        if (this.question.env === "moon" || this.question.gravity === 1.6) {
+          envBadge.className = "py-1.5 px-3 rounded-lg bg-gradient-to-r from-amber-600 to-yellow-500 border border-yellow-300 text-slate-950 font-sans font-extrabold text-center text-xs shadow-lg animate-pulse";
+          envBadge.innerHTML = `<i class="fa-solid fa-moon mr-1"></i> 🌕 สภาพแวดล้อม: ดวงจันทร์ (g = 1.60 m/s²)`;
+        } else if (this.question.env === "mars" || this.question.gravity === 3.7) {
+          envBadge.className = "py-1.5 px-3 rounded-lg bg-gradient-to-r from-red-800 to-orange-700 border border-orange-400 text-slate-100 font-sans font-extrabold text-center text-xs shadow";
+          envBadge.innerHTML = `<i class="fa-solid fa-planet-ringed mr-1"></i> 🔴 สภาพแวดล้อม: ดาวอังคาร (g = 3.70 m/s²)`;
+        } else if (this.question.env === "venus") {
+          envBadge.className = "py-1.5 px-3 rounded-lg bg-amber-900 border border-amber-600 text-amber-200 font-sans font-bold text-center text-xs shadow";
+          envBadge.innerHTML = `🟡 สภาพแวดล้อม: ดาวศุกร์ (g = 8.90 m/s²)`;
+        } else if (this.question.env === "jupiter") {
+          envBadge.className = "py-1.5 px-3 rounded-lg bg-orange-950 border border-orange-700 text-orange-200 font-sans font-bold text-center text-xs shadow";
+          envBadge.innerHTML = `🟠 สภาพแวดล้อม: ดาวพฤหัสบดี (g = 24.80 m/s²)`;
+        } else {
+          envBadge.className = "py-1 px-2 rounded-lg bg-indigo-950/90 border border-indigo-500/50 text-indigo-300 font-sans font-bold text-center text-[11px] shadow";
+          envBadge.innerHTML = `🌍 สภาพแวดล้อม: บนโลก (${this.question.gravity} m/s²)`;
+        }
+
+        const wallCont = document.getElementById('q-wall-container');
+        if (this.question.wall) {
+          wallCont.classList.remove('hidden');
+          document.getElementById('q-wall-info').textContent = `X=${this.question.wall.x}m, H=${this.question.wall.height}m`;
+        } else {
+          wallCont.classList.add('hidden');
+        }
+      }
+
+      fireCannon() {
+        if (this.ball.active || this.attemptsLeft <= 0) return;
+
+        const rad = (this.angle * Math.PI) / 180;
+        const barrelLen = 40;
+        const muzzleX = (Math.cos(rad) * barrelLen) / this.scale;
+        const muzzleY = this.h0 + (Math.sin(rad) * barrelLen) / this.scale;
+
+        this.ball.active = true;
+        this.ball.x = muzzleX;
+        this.ball.y = muzzleY;
+        this.ball.vx = this.v0 * Math.cos(rad);
+        this.ball.vy = this.v0 * Math.sin(rad);
+        this.ball.time = 0;
+        this.ball.path = [{ x: muzzleX, y: muzzleY }];
+
+        this.recoil = 12;
+
+        sound.playCannonFire();
+        const cp = this.worldToCanvas(muzzleX, muzzleY);
+        this.createMuzzleParticles(cp.x, cp.y, rad);
+      }
+
+      updatePhysics(dt) {
+        if (this.recoil > 0) this.recoil *= 0.85;
+
+        if (this.ball.active) {
+          const subSteps = 6;
+          const subDt = dt / subSteps;
+
+          for (let step = 0; step < subSteps; step++) {
+            this.ball.time += subDt;
+
+            // Projectile Motion Equations
+            this.ball.vy -= this.gravity * subDt;
+            this.ball.x += this.ball.vx * subDt;
+            this.ball.y += this.ball.vy * subDt;
+
+            this.ball.path.push({ x: this.ball.x, y: this.ball.y });
+
+            // Smoke Particles
+            if (Math.random() < 0.3) {
+              const cp = this.worldToCanvas(this.ball.x, this.ball.y);
+              this.particles.push({
+                x: cp.x, y: cp.y,
+                vx: (Math.random() - 0.5) * 8,
+                vy: (Math.random() - 0.5) * 8,
+                radius: Math.random() * 3 + 2,
+                alpha: 0.6,
+                color: '203, 213, 225',
+                life: 0.35
+              });
+            }
+
+            // Collision 1: Obstacle Wall
+            if (this.question.wall) {
+              const w = this.question.wall;
+              if (this.ball.x >= w.x && this.ball.x <= (w.x + w.width) && this.ball.y <= w.height) {
+                this.onShotCompleted(false, "ชนกำแพงสิ่งกีดขวาง!");
+                break;
+              }
+            }
+
+            // Collision 2: Target Hit
+            const dx = this.ball.x - this.question.targetX;
+            const dy = this.ball.y - this.question.targetY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist <= this.question.targetRadius) {
+              this.onShotCompleted(true, "HIT! ยิงโดนเป้าหมาย!");
+              break;
+            }
+
+            // Collision 3: Ground Impact
+            if (this.ball.y <= 0) {
+              this.ball.y = 0;
+              this.onShotCompleted(false, "กระสุนตกลงสู่พื้นดิน");
+              break;
+            }
+
+            // Out of bounds
+            if (this.ball.x > 1000 || this.ball.x < -100 || this.ball.y < -100) {
+              this.onShotCompleted(false, "กระสุนออกนอกเขตทดสอบ");
+              break;
+            }
+          }
+        }
+
+        // Particles Life Cycle Update
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+          const p = this.particles[i];
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.alpha -= dt / p.life;
+          if (p.alpha <= 0) this.particles.splice(i, 1);
+        }
+      }
+
+      onShotCompleted(isHit, message) {
+        this.ball.active = false;
+        const attemptNum = 3 - this.attemptsLeft;
+        this.attemptsLeft--;
+
+        document.getElementById('hud-quiz-attempts').textContent = `${this.attemptsLeft} / 2`;
+
+        const impactX = this.ball.x;
+        const impactY = this.ball.y;
+        const errorX = impactX - this.question.targetX;
+        const errorY = impactY - this.question.targetY;
+
+        this.previousShots.push({
+          path: [...this.ball.path],
+          impactX: impactX,
+          impactY: impactY,
+          isHit: isHit
+        });
+
+        // Add to flight data log
+        this.shotLog.unshift({
+          qNum: this.currentQIdx + 1,
+          attempt: attemptNum,
+          angle: this.angle.toFixed(1),
+          v0: this.v0.toFixed(1),
+          flightTime: this.ball.time.toFixed(2),
+          range: impactX.toFixed(1),
+          errorX: errorX.toFixed(1),
+          errorY: errorY.toFixed(1),
+          isHit: isHit
+        });
+        this.renderLogTable();
+
+        const cp = this.worldToCanvas(impactX, impactY);
+
+        if (isHit) {
+          sound.playSuccessChime();
+          sound.playHitExplosion();
+          this.createExplosionBurst(cp.x, cp.y, '#34d399', 45);
+
+          const scoreEarned = attemptNum === 1 ? 20 : 10;
+          this.questionScores[this.currentQIdx] = scoreEarned;
+          this.recalculateTotalScore();
+
+          this.showBanner(`HIT! (+${scoreEarned} คะแนน)`, "from-emerald-300 to-teal-400", `โดนเป้าหมายในการยิงครั้งที่ ${attemptNum}`);
+
+          setTimeout(() => this.nextQuestionOrFinish(), 2400);
+
+        } else {
+          sound.playMissSound();
+          this.createExplosionBurst(cp.x, cp.y, '#94a3b8', 25);
+
+          if (this.attemptsLeft > 0) {
+            this.showBanner("MISS! พลาดเป้าหมาย", "from-slate-300 to-amber-400", `เหลือสิทธิ์ยิงอีก ${this.attemptsLeft} ครั้ง (คลาดเคลื่อน ΔX=${errorX > 0 ? '+' : ''}${errorX.toFixed(1)}m)`);
+          } else {
+            this.questionScores[this.currentQIdx] = 0;
+            this.recalculateTotalScore();
+            this.showBanner("หมดสิทธิ์ยิง! (0 คะแนน)", "from-red-400 to-amber-500", `ผ่านไปทำโจทย์ข้อถัดไป`);
+
+            setTimeout(() => this.nextQuestionOrFinish(), 2400);
+          }
+        }
+      }
+
+      recalculateTotalScore() {
+        this.totalScore = this.questionScores.reduce((a, b) => a + b, 0);
+        document.getElementById('hud-quiz-score').textContent = this.totalScore;
+      }
+
+      nextQuestionOrFinish() {
+        if (this.currentQIdx < 4) {
+          this.loadQuestion(this.currentQIdx + 1);
+        } else {
+          this.showQuizFinishModal();
+        }
+      }
+
+      showQuizFinishModal() {
+        sound.playSuccessChime();
+        this.createConfetti();
+
+        document.getElementById('finish-student-info').textContent = `นักเรียน: ${this.student.name} | ชั้น ${this.student.class} | เลขที่ ${this.student.no}`;
+        document.getElementById('finish-total-score').textContent = this.totalScore;
+
+        const badgeEl = document.getElementById('finish-badge-container');
+        if (this.totalScore >= 80) {
+          badgeEl.innerHTML = `<span class="px-3 py-1 bg-emerald-950 text-emerald-300 border border-emerald-700 rounded-full"><i class="fa-solid fa-star text-amber-400 mr-1"></i>ระดับดีเยี่ยม (Physics Master)</span>`;
+        } else if (this.totalScore >= 50) {
+          badgeEl.innerHTML = `<span class="px-3 py-1 bg-amber-950 text-amber-300 border border-amber-700 rounded-full"><i class="fa-solid fa-thumbs-up mr-1"></i>ระดับผ่านเกณฑ์ (Good Progress)</span>`;
+        } else {
+          badgeEl.innerHTML = `<span class="px-3 py-1 bg-slate-800 text-slate-300 border border-slate-700 rounded-full">ควรฝึกฝนการคำนวณเพิ่มเติม</span>`;
+        }
+
+        const grid = document.getElementById('finish-breakdown-grid');
+        grid.innerHTML = this.questionScores.map((sc, i) => `
+          <div class="p-2 bg-slate-900 border ${sc > 0 ? 'border-emerald-500/40 text-emerald-300' : 'border-slate-800 text-slate-500'} rounded-xl flex flex-col items-center">
+            <span class="text-[10px] text-slate-400 font-sans">ข้อ ${i + 1}</span>
+            <span class="text-base font-bold font-mono">${sc}</span>
+            <span class="text-[9px] ${sc === 20 ? 'text-emerald-400' : sc === 10 ? 'text-amber-400' : 'text-slate-500'}">
+              ${sc === 20 ? 'นัดที่ 1' : sc === 10 ? 'นัดที่ 2' : 'พลาด'}
+            </span>
+          </div>
+        `).join('');
+
+        document.getElementById('modal-quiz-finish').classList.remove('hidden');
+
+        // AUTO-SAVE: Automatically trigger score submission in background
+        this.autoSubmitScoresToGoogleSheet();
+      }
+
+      autoSubmitScoresToGoogleSheet() {
+        const statusBox = document.getElementById('sheet-submit-status');
+
+        if (!this.student.scriptUrl) {
+          statusBox.className = "mb-5 p-3 rounded-xl text-xs font-mono text-center border bg-amber-950/80 text-amber-300 border-amber-800 block";
+          statusBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1"></i> <strong>ยังไม่ได้เชื่อมต่อ Google Sheet:</strong> คุณครูสามารถกำหนด Web App URL ในเมนูตั้งค่าระบบ (⚙️) เพื่อเปิดใช้งานระบบบันทึกอัตโนมัติ`;
+          return;
+        }
+
+        statusBox.className = "mb-5 p-3 rounded-xl text-xs font-mono text-center border bg-cyan-950/90 text-cyan-300 border-cyan-700 block animate-pulse";
+        statusBox.innerHTML = `<i class="fa-solid fa-spinner animate-spin text-cyan-400 mr-2"></i> <strong>กำลังบันทึกคะแนนเข้า Google Sheet อัตโนมัติ...</strong>`;
+
+        const payload = {
+          timestamp: new Date().toLocaleString("th-TH"),
+          studentName: this.student.name,
+          studentClass: this.student.class,
+          studentNo: this.student.no,
+          q1: this.questionScores[0],
+          q2: this.questionScores[1],
+          q3: this.questionScores[2],
+          q4: this.questionScores[3],
+          q5: this.questionScores[4],
+          totalScore: this.totalScore
+        };
+
+        fetch(this.student.scriptUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {
+            'Content-Type': 'text/plain'
+          },
+          body: JSON.stringify(payload)
+        }).then(() => {
+          statusBox.className = "mb-5 p-3 rounded-xl text-xs font-mono text-center border bg-emerald-950/90 text-emerald-300 border-emerald-600 block shadow-lg shadow-emerald-950/50";
+          statusBox.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400 text-sm mr-1.5"></i> <strong>บันทึกคะแนนลง Google Sheet เรียบร้อยแล้ว!</strong>`;
+        }).catch((err) => {
+          statusBox.className = "mb-5 p-3 rounded-xl text-xs font-mono text-center border bg-red-950/80 text-red-300 border-red-800 block";
+          statusBox.innerHTML = `<i class="fa-solid fa-circle-xmark mr-1"></i> การบันทึกอัตโนมัติขัดข้อง: ${err.message}`;
+        });
+      }
+
+      downloadCSV() {
+        const rows = [
+          ["Timestamp", "Name", "Class", "No", "Q1", "Q2", "Q3", "Q4", "Q5", "TotalScore"],
+          [
+            new Date().toLocaleString("th-TH"),
+            `"${this.student.name}"`,
+            `"${this.student.class}"`,
+            this.student.no,
+            this.questionScores[0],
+            this.questionScores[1],
+            this.questionScores[2],
+            this.questionScores[3],
+            this.questionScores[4],
+            this.totalScore
+          ]
+        ];
+
+        const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + rows.map(e => e.join(",")).join("\n");
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `Projectile_Quiz_${this.student.name}_${this.student.class}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      copyJSON() {
+        const data = {
+          studentName: this.student.name,
+          studentClass: this.student.class,
+          studentNo: this.student.no,
+          scores: this.questionScores,
+          totalScore: this.totalScore,
+          timestamp: new Date().toISOString()
+        };
+        const str = JSON.stringify(data, null, 2);
+        navigator.clipboard.writeText(str).then(() => {
+          alert("คัดลอก JSON ผลคะแนนเรียบร้อยแล้ว!");
+        });
+      }
+
+      showBanner(title, gradient, subtitle) {
+        const banner = document.getElementById('banner-msg');
+        const titleEl = document.getElementById('banner-title');
+        const subtitleEl = document.getElementById('banner-subtitle');
+
+        titleEl.textContent = title;
+        titleEl.className = `text-3xl sm:text-5xl font-black italic drop-shadow-[0_8px_20px_rgba(0,0,0,0.9)] bg-gradient-to-r ${gradient} bg-clip-text text-transparent`;
+        subtitleEl.textContent = subtitle;
+
+        banner.classList.remove('opacity-0', 'scale-90');
+        banner.classList.add('opacity-100', 'scale-100');
+
+        setTimeout(() => {
+          banner.classList.remove('opacity-100', 'scale-100');
+          banner.classList.add('opacity-0', 'scale-90');
+        }, 2200);
+      }
+
+      renderLogTable() {
+        const tbody = document.getElementById('log-table-body');
+        if (this.shotLog.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="8" class="p-3 text-center text-slate-500 italic">ยังไม่มีข้อมูลการยิง</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = this.shotLog.map((row) => `
+          <tr class="hover:bg-slate-900/50">
+            <td class="p-1.5 text-cyan-400 font-bold">ข้อ ${row.qNum}</td>
+            <td class="p-1.5 text-amber-300">ครั้งที่ ${row.attempt}</td>
+            <td class="p-1.5">${row.angle}°</td>
+            <td class="p-1.5">${row.v0} m/s</td>
+            <td class="p-1.5 text-emerald-400">${row.flightTime} s</td>
+            <td class="p-1.5 text-sky-300">${row.range} m</td>
+            <td class="p-1.5 text-slate-400">ΔX: ${row.errorX}m, ΔY: ${row.errorY}m</td>
+            <td class="p-1.5">
+              ${row.isHit 
+                ? `<span class="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-700">HIT</span>`
+                : `<span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">MISS</span>`
+              }
+            </td>
+          </tr>
+        `).join('');
+      }
+
+      createMuzzleParticles(x, y, angle) {
+        for (let i = 0; i < 20; i++) {
+          const spd = Math.random() * 80 + 20;
+          const spread = (Math.random() - 0.5) * 0.6;
+          this.particles.push({
+            x: x, y: y,
+            vx: Math.cos(angle + spread) * spd,
+            vy: -Math.sin(angle + spread) * spd,
+            radius: Math.random() * 5 + 2,
+            alpha: 0.8,
+            color: '251, 191, 36',
+            life: 0.35
+          });
+        }
+      }
+
+      createExplosionBurst(x, y, colorHex, count) {
+        for (let i = 0; i < count; i++) {
+          const ang = Math.random() * Math.PI * 2;
+          const spd = Math.random() * 150 + 20;
+          this.particles.push({
+            x: x, y: y,
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd,
+            radius: Math.random() * 4 + 2,
+            alpha: 1.0,
+            color: colorHex,
+            life: Math.random() * 0.5 + 0.3
+          });
+        }
+      }
+
+      createConfetti() {
+        const colors = ['#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6'];
+        for (let i = 0; i < 60; i++) {
+          const div = document.createElement('div');
+          div.className = 'confetti';
+          div.style.left = Math.random() * 100 + 'vw';
+          div.style.top = '-10px';
+          div.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+          div.style.transform = `rotate(${Math.random() * 360}deg)`;
+          document.body.appendChild(div);
+
+          const duration = Math.random() * 2 + 1.5;
+          div.animate([
+            { transform: `translateY(0) rotate(0deg)`, opacity: 1 },
+            { transform: `translateY(100vh) rotate(720deg)`, opacity: 0 }
+          ], {
+            duration: duration * 1000,
+            easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+          });
+
+          setTimeout(() => div.remove(), duration * 1000);
+        }
+      }
+
+      worldToCanvas(wx, wy) {
+        return {
+          x: this.originX + wx * this.scale,
+          y: this.originY - wy * this.scale
+        };
+      }
+
+      render() {
+        const w = this.canvas.width / (window.devicePixelRatio || 1);
+        const h = this.canvas.height / (window.devicePixelRatio || 1);
+
+        const isMoon = this.question.env === "moon" || this.question.gravity === 1.6;
+        const isMars = this.question.env === "mars" || this.question.gravity === 3.7;
+
+        // Dynamic Sky Background based on Environment
+        if (isMoon) {
+          this.ctx.fillStyle = '#020617'; // Deep space black
+          this.ctx.fillRect(0, 0, w, h);
+
+          // Render starry background
+          this.stars.forEach(st => {
+            this.ctx.beginPath();
+            this.ctx.arc(st.x * w, st.y * (this.originY), st.radius, 0, Math.PI * 2);
+            this.ctx.fillStyle = `rgba(255, 255, 255, ${st.alpha})`;
+            this.ctx.fill();
+          });
+        } else if (isMars) {
+          this.ctx.fillStyle = '#1a0c0c'; // Red-tinted space sky
+          this.ctx.fillRect(0, 0, w, h);
+        } else {
+          this.ctx.fillStyle = '#080c14'; // Earth standard dark sky
+          this.ctx.fillRect(0, 0, w, h);
+        }
+
+        // Environment Background Watermark Label on Canvas
+        this.ctx.font = 'bold 16px Kanit';
+        this.ctx.fillStyle = isMoon ? 'rgba(234, 179, 8, 0.25)' : isMars ? 'rgba(239, 68, 68, 0.25)' : 'rgba(56, 189, 248, 0.15)';
+        const envLabel = isMoon ? "🌕 MOON ENVIRONMENT (g = 1.60 m/s²)" : isMars ? "🔴 MARS ENVIRONMENT (g = 3.70 m/s²)" : `EARTH ENVIRONMENT (g = ${this.gravity} m/s²)`;
+        this.ctx.fillText(envLabel, w - 340, 40);
+
+        // Coordinate Grid (Ticks every 10m)
+        if (this.showGrid) {
+          this.renderGrid(w, h);
+        }
+
+        // Terrain & Wall
+        this.renderTerrainAndObstacles(w, h, isMoon, isMars);
+
+        // Target
+        this.renderTarget();
+
+        // Past Trails
+        if (this.showPastTrails) {
+          this.renderPreviousShots();
+        }
+
+        // Active Ball
+        if (this.ball.active) {
+          this.renderActiveBallAndVectors();
+        }
+
+        // Cannon Turret
+        this.renderCannonAssembly();
+
+        // Particles
+        this.particles.forEach((p) => {
+          this.ctx.beginPath();
+          this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          this.ctx.fillStyle = p.color.startsWith('#') ? p.color : `rgba(${p.color}, ${Math.max(0, p.alpha)})`;
+          this.ctx.globalAlpha = Math.max(0, p.alpha);
+          this.ctx.fill();
+          this.ctx.globalAlpha = 1.0;
+        });
+      }
+
+      renderGrid(w, h) {
+        this.ctx.strokeStyle = 'rgba(51, 65, 85, 0.35)';
+        this.ctx.lineWidth = 1;
+
+        const gridStep = 10;
+
+        for (let xMeters = 0; xMeters * this.scale < w; xMeters += gridStep) {
+          const cx = this.originX + xMeters * this.scale;
+          this.ctx.beginPath();
+          this.ctx.moveTo(cx, 0);
+          this.ctx.lineTo(cx, h);
+          this.ctx.stroke();
+
+          this.ctx.fillStyle = '#64748b';
+          this.ctx.font = '10px JetBrains Mono';
+          this.ctx.fillText(`${xMeters}m`, cx + 2, this.originY + 14);
+        }
+
+        for (let yMeters = 0; yMeters * this.scale < h; yMeters += gridStep) {
+          const cy = this.originY - yMeters * this.scale;
+          this.ctx.beginPath();
+          this.ctx.moveTo(0, cy);
+          this.ctx.lineTo(w, cy);
+          this.ctx.stroke();
+
+          if (yMeters > 0) {
+            this.ctx.fillStyle = '#64748b';
+            this.ctx.font = '10px JetBrains Mono';
+            this.ctx.fillText(`${yMeters}m`, this.originX - 30, cy - 2);
+          }
+        }
+      }
+
+      renderTerrainAndObstacles(w, h, isMoon, isMars) {
+        // Ground Fill & Stroke Colors per environment
+        let groundFill = '#042f2e';
+        let groundStroke = '#10b981';
+
+        if (isMoon) {
+          groundFill = '#334155';   // Lunar Slate Gray
+          groundStroke = '#94a3b8'; // Lunar Silver Crust
+        } else if (isMars) {
+          groundFill = '#451a03';   // Mars Rusty Red
+          groundStroke = '#f97316';
+        }
+
+        this.ctx.fillStyle = groundFill;
+        this.ctx.fillRect(0, this.originY, w, h - this.originY);
+
+        this.ctx.strokeStyle = groundStroke;
+        this.ctx.lineWidth = 3;
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, this.originY);
+        this.ctx.lineTo(w, this.originY);
+        this.ctx.stroke();
+
+        // Cliff h0
+        if (this.h0 > 0) {
+          const cliffCanvasTop = this.originY - this.h0 * this.scale;
+          this.ctx.fillStyle = isMoon ? '#1e293b' : '#1e293b';
+          this.ctx.fillRect(0, cliffCanvasTop, this.originX + 15, this.h0 * this.scale);
+          this.ctx.strokeStyle = isMoon ? '#cbd5e1' : '#38bdf8';
+          this.ctx.lineWidth = 2;
+          this.ctx.strokeRect(0, cliffCanvasTop, this.originX + 15, this.h0 * this.scale);
+        }
+
+        // Obstacle Wall
+        if (this.question.wall) {
+          const wall = this.question.wall;
+          const wallPos = this.worldToCanvas(wall.x, wall.height);
+          const wallWidthPx = wall.width * this.scale;
+          const wallHeightPx = wall.height * this.scale;
+
+          this.ctx.fillStyle = '#b45309';
+          this.ctx.fillRect(wallPos.x, wallPos.y, wallWidthPx, wallHeightPx);
+          this.ctx.strokeStyle = '#f59e0b';
+          this.ctx.lineWidth = 2;
+          this.ctx.strokeRect(wallPos.x, wallPos.y, wallWidthPx, wallHeightPx);
+
+          this.ctx.fillStyle = '#fef08a';
+          this.ctx.font = '10px Kanit';
+          this.ctx.fillText(`กำแพง H=${wall.height}m`, wallPos.x - 10, wallPos.y - 6);
+        }
+      }
+
+      renderTarget() {
+        const cp = this.worldToCanvas(this.question.targetX, this.question.targetY);
+        const r = this.question.targetRadius * this.scale;
+
+        this.ctx.beginPath();
+        this.ctx.arc(cp.x, cp.y, r, 0, Math.PI * 2);
+        this.ctx.fillStyle = '#ef4444';
+        this.ctx.fill();
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 2;
+        this.ctx.stroke();
+
+        this.ctx.beginPath();
+        this.ctx.arc(cp.x, cp.y, r * 0.6, 0, Math.PI * 2);
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fill();
+
+        this.ctx.beginPath();
+        this.ctx.arc(cp.x, cp.y, r * 0.3, 0, Math.PI * 2);
+        this.ctx.fillStyle = '#f59e0b';
+        this.ctx.fill();
+
+        const badgeText = `เป้าหมาย (X=${this.question.targetX}m, Y=${this.question.targetY}m)`;
+        this.ctx.font = 'bold 11px Kanit';
+        const textWidth = this.ctx.measureText(badgeText).width;
+
+        this.ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+        this.ctx.strokeStyle = '#f59e0b';
+        this.ctx.lineWidth = 1;
+        this.ctx.fillRect(cp.x - textWidth / 2 - 6, cp.y - r - 35, textWidth + 12, 18);
+        this.ctx.strokeRect(cp.x - textWidth / 2 - 6, cp.y - r - 35, textWidth + 12, 18);
+
+        this.ctx.fillStyle = '#fbbf24';
+        this.ctx.fillText(badgeText, cp.x - textWidth / 2, cp.y - r - 22);
+      }
+
+      renderPreviousShots() {
+        this.previousShots.forEach((shot) => {
+          if (shot.path.length < 2) return;
+
+          this.ctx.beginPath();
+          this.ctx.setLineDash([3, 3]);
+          this.ctx.strokeStyle = shot.isHit ? 'rgba(52, 211, 153, 0.4)' : 'rgba(148, 163, 184, 0.3)';
+          this.ctx.lineWidth = 1.5;
+          shot.path.forEach((pt, i) => {
+            const cp = this.worldToCanvas(pt.x, pt.y);
+            if (i === 0) this.ctx.moveTo(cp.x, cp.y);
+            else this.ctx.lineTo(cp.x, cp.y);
+          });
+          this.ctx.stroke();
+          this.ctx.setLineDash([]);
+
+          const imp = this.worldToCanvas(shot.impactX, shot.impactY);
+          this.ctx.beginPath();
+          this.ctx.arc(imp.x, imp.y, 4, 0, Math.PI * 2);
+          this.ctx.fillStyle = shot.isHit ? '#34d399' : '#f43f5e';
+          this.ctx.fill();
+        });
+      }
+
+      renderActiveBallAndVectors() {
+        const cp = this.worldToCanvas(this.ball.x, this.ball.y);
+
+        this.ctx.beginPath();
+        this.ctx.strokeStyle = '#38bdf8';
+        this.ctx.lineWidth = 2.5;
+        this.ball.path.forEach((pt, i) => {
+          const p = this.worldToCanvas(pt.x, pt.y);
+          if (i === 0) this.ctx.moveTo(p.x, p.y);
+          else this.ctx.lineTo(p.x, p.y);
+        });
+        this.ctx.stroke();
+
+        this.ctx.beginPath();
+        this.ctx.arc(cp.x, cp.y, 6, 0, Math.PI * 2);
+        this.ctx.fillStyle = '#fbbf24';
+        this.ctx.shadowColor = '#f59e0b';
+        this.ctx.shadowBlur = 12;
+        this.ctx.fill();
+        this.ctx.shadowBlur = 0;
+
+        if (this.showVectors) {
+          const vecScale = 0.8;
+          this.drawArrow(cp.x, cp.y, cp.x + this.ball.vx * vecScale, cp.y, '#22c55e', 'vₓ');
+          this.drawArrow(cp.x, cp.y, cp.x, cp.y - this.ball.vy * vecScale, '#3b82f6', 'vᵧ');
+          this.drawArrow(cp.x, cp.y, cp.x, cp.y + this.gravity * 3.0, '#ef4444', 'g');
+        }
+      }
+
+      drawArrow(fromX, fromY, toX, toY, color, label) {
+        const headLen = 7;
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+
+        this.ctx.strokeStyle = color;
+        this.ctx.fillStyle = color;
+        this.ctx.lineWidth = 2;
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(fromX, fromY);
+        this.ctx.lineTo(toX, toY);
+        this.ctx.stroke();
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(toX, toY);
+        this.ctx.lineTo(toX - headLen * Math.cos(angle - Math.PI / 6), toY - headLen * Math.sin(angle - Math.PI / 6));
+        this.ctx.lineTo(toX - headLen * Math.cos(angle + Math.PI / 6), toY - headLen * Math.sin(angle + Math.PI / 6));
+        this.ctx.fill();
+
+        this.ctx.font = '10px JetBrains Mono';
+        this.ctx.fillText(label, toX + 4, toY + 4);
+      }
+
+      renderCannonAssembly() {
+        const basePos = this.worldToCanvas(0, this.h0);
+        const rad = (this.angle * Math.PI) / 180;
+
+        this.ctx.save();
+        this.ctx.translate(basePos.x, basePos.y);
+
+        this.ctx.fillStyle = '#334155';
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, 18, Math.PI, 0);
+        this.ctx.fill();
+        this.ctx.strokeStyle = '#64748b';
+        this.ctx.lineWidth = 2;
+        this.ctx.stroke();
+
+        this.ctx.rotate(-rad);
+        const barrelLen = 42;
+        const barrelW = 12;
+        const rx = -this.recoil;
+
+        this.ctx.fillStyle = '#475569';
+        this.ctx.fillRect(rx, -barrelW / 2, barrelLen, barrelW);
+        this.ctx.strokeStyle = '#94a3b8';
+        this.ctx.strokeRect(rx, -barrelW / 2, barrelLen, barrelW);
+
+        this.ctx.fillStyle = '#38bdf8';
+        this.ctx.fillRect(rx + barrelLen - 3, -barrelW / 2 - 2, 4, barrelW + 4);
+
+        this.ctx.restore();
+      }
+
+      loop(timestamp) {
+        const dt = Math.min((timestamp - this.lastTime) / 1000, 0.1);
+        this.lastTime = timestamp;
+
+        this.updatePhysics(dt);
+        this.render();
+
+        requestAnimationFrame((t) => this.loop(t));
+      }
+    }
+
+    // Initialize App
+    window.addEventListener('load', () => {
+      window.app = new ProjectileQuizApp();
+    });
+  </script>
+</body>
+</html>
